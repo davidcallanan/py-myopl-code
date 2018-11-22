@@ -136,6 +136,9 @@ class Lexer:
 class NumberNode:
     def __init__(self, tok):
         self.tok = tok
+
+        self.pos_start = self.tok.pos_start
+        self.pos_end = self.tok.pos_end
     
     def __repr__(self):
         return f'{self.tok}'
@@ -146,6 +149,9 @@ class BinOpNode:
         self.op_tok = op_tok
         self.right_node = right_node
 
+        self.pos_start = self.left_node.pos_start
+        self.pos_end = self.right_node.pos_end
+
     def __repr__(self):
         return f'({self.left_node}, {self.op_tok}, {self.right_node})'
 
@@ -153,6 +159,9 @@ class UnaryOpNode:
     def __init__(self, op_tok, node):
         self.op_tok = op_tok
         self.node = node
+
+        self.pos_start = self.op_tok.pos_start
+        self.pos_end = self.node.pos_end
 
     def __repr__(self):
         return f'({self.op_tok}, {self.node})'
@@ -279,6 +288,116 @@ class Parser:
         return res.success(node)
 
 #######################################
+# RUNTIME RESULT
+#######################################
+
+class RTResult:
+    def __init__(self, value=None, error=None):
+        self.value = value
+        self.error = error
+
+#######################################
+# RUNTIME ERROR
+#######################################
+
+class RTError:
+    def __init__(self, pos_start, pos_end, details=''):
+        self.pos_start = pos_start
+        self.pos_end = pos_end
+        self.details = details
+
+    def string(self, text):
+        err  = f'Runtime Error: {self.details}\n'
+        err += f'Ln {self.pos_start.ln + 1}, Col {self.pos_start.col + 1}'
+        err += f' -> Ln {self.pos_end.ln + 1}, Col {self.pos_end.col + 1}\n'
+        err += '\n' + string_with_arrows(text, self.pos_start, self.pos_end)
+
+        return err
+
+#######################################
+# VALUES
+#######################################
+
+class Number:
+    def __init__(self, value, pos_start, pos_end):
+        self.value = value
+
+        self.pos_start = pos_start
+        self.pos_end = pos_end
+
+    def added_to(self, other):
+        if isinstance(other, Number):
+            return RTResult(Number(self.value + other.value,
+                self.pos_start, other.pos_end))
+
+    def subbed_by(self, other):
+        if isinstance(other, Number):
+            return RTResult(Number(self.value - other.value,
+                self.pos_start, other.pos_end))
+
+    def multed_by(self, other):
+        if isinstance(other, Number):
+            return RTResult(Number(self.value * other.value,
+                self.pos_start, other.pos_end))
+
+    def dived_by(self, other):
+        if isinstance(other, Number):
+            if other.value == 0:
+                return RTResult(error=RTError(
+                    other.pos_start, other.pos_end,
+                    'Division by zero'
+                ))
+            return RTResult(Number(self.value / other.value,
+                self.pos_start, other.pos_end))
+
+    def negated(self):
+        return RTResult(Number(-self.value, self.pos_start, self.pos_end))
+        
+#######################################
+# INTERPRETER
+#######################################
+
+class Interpreter:
+    def visit(self, node):
+        method_name = f'visit_{type(node).__name__}'
+        method = getattr(self, method_name, self.no_visit_method)
+        return method(node)
+
+    def no_visit_method(self, node):
+        raise Exception(f'No visit_{type(node).__name__} method')
+
+    ###################################
+
+    def visit_NumberNode(self, node):
+        return RTResult(Number(node.tok.value, node.pos_start, node.pos_end))
+
+    def visit_BinOpNode(self, node):
+        left = self.visit(node.left_node)
+        if left.error: return left
+        right = self.visit(node.right_node)
+        if right.error: return right
+        
+        if node.op_tok.type == TT_PLUS:
+            return left.value.added_to(right.value)
+        if node.op_tok.type == TT_MINUS:
+            return left.value.subbed_by(right.value)
+        if node.op_tok.type == TT_MUL:
+            return left.value.multed_by(right.value)
+        if node.op_tok.type == TT_DIV:
+            return left.value.dived_by(right.value)
+
+    def visit_UnaryOpNode(self, node):
+        number = self.visit(node.node)
+        if number.error: return number
+
+        if node.op_tok.type == TT_MINUS:
+            result = number.value.negated()
+            result.value.pos_start = node.op_tok.pos_start
+            return result
+        
+        return number
+
+#######################################
 # MAIN
 #######################################
 
@@ -295,8 +414,20 @@ def main():
         # Generate AST
         parser = Parser(tokens)
         ast = parser.parse()
-        if not ast.is_success: print(ast.error.string(text))
-        else: print(ast.node)
+        if not ast.is_success:
+            print(ast.error.string(text))
+            continue
+
+        # Run code
+        interpreter = Interpreter()
+        result = interpreter.visit(ast.node)
+        if result.error:
+            print(result.error.string(text))
+            continue
+        
+        # Output result
+        if isinstance(result.value, Number):
+            print(result.value.value)
 
 if __name__ == '__main__':
     main()
