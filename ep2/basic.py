@@ -196,8 +196,12 @@ class ParseResult:
         self.node = None
 
     def register(self, res=None):
-        # self.to_reverse += res.to_reverse if res else 1
-        if res and res.error: self.error = res.error
+        if isinstance(res, ParseResult):
+            if res.error: self.error = res.error
+            # self.to_reverse += res.to_reverse
+            return res.node
+        # elif isinstance(res, Token):
+        #     self.to_reverse += 1
         return res
 
     def success(self, node):
@@ -222,6 +226,7 @@ class Parser:
         self.tok_idx += 1
         if self.tok_idx < len(self.tokens):
             self.current_tok = self.tokens[self.tok_idx]
+        return self.current_tok
         
     # def reverse(self, count):
     #     self.tok_index -= count
@@ -245,7 +250,7 @@ class Parser:
             res.register(self.advance())
             factor = res.register(self.factor())
             if res.error: return res
-            return res.success(UnaryOpNode(tok, factor.node))
+            return res.success(UnaryOpNode(tok, factor))
         
         elif tok.type in (TT_INT, TT_FLOAT):
             res.register(self.advance())
@@ -257,7 +262,7 @@ class Parser:
             if res.error: return res
             if self.current_tok.type == TT_RPAREN:
                 res.register(self.advance())
-                return res.success(expr.node)
+                return res.success(expr)
         
         return res.failure(InvalidSyntaxError(
             tok.pos_start, tok.pos_end,
@@ -276,16 +281,15 @@ class Parser:
         res = ParseResult()
         left = res.register(func())
         if res.error: return res
-        node = left.node
 
         while self.current_tok.type in ops:
             op_tok = self.current_tok
             res.register(self.advance())
             right = res.register(func())
             if res.error: return res
-            node = BinOpNode(node, op_tok, right.node)
+            left = BinOpNode(left, op_tok, right)
 
-        return res.success(node)
+        return res.success(left)
 
 #######################################
 # MAIN
@@ -307,8 +311,8 @@ def main():
         # Generate AST
         parser = Parser(tokens)
         ast = parser.parse()
-        if ast.error: print(result.ast.as_string(text))
-        else: print(result.node)
+        if ast.error: print(ast.error.as_string(text))
+        else: print(ast.node)
 
 if __name__ == '__main__':
     main()
