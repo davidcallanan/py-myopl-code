@@ -1,0 +1,7 @@
+expr    : term ((PLUS|MINUS) term)*
+
+term    : factor ((MUL|DIV) factor)*
+
+factor  : (PLUS|MINUS) factor
+        : INT|FLOAT
+        : LPAREN expr RPAREN

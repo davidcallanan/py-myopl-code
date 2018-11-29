@@ -5,6 +5,27 @@
 DIGITS = '0123456789'
 
 #######################################
+# ERRORS
+#######################################
+
+class Error:
+    def __init__(self, pos_start, pos_end, error_name, details):
+        self.pos_start = pos_start
+        self.pos_end = pos_end
+        self.error_name = error_name
+        self.details = details
+
+    def as_string(self):
+        result  = f'{self.error_name}: {self.details}\n'
+        result += f'Ln {self.pos_start.ln + 1}, Col {self.pos_start.col + 1}'
+        result += f' -> Ln {self.pos_end.ln + 1}, Col {self.pos_end.col + 1}'
+        return result
+
+class IllegalCharError(Error):
+    def __init__(self, pos_start, pos_end, details=''):
+        super().__init__(pos_start, pos_end, 'Illegal Character', details)
+
+#######################################
 # POSITION
 #######################################
 
@@ -20,6 +41,7 @@ class Position:
         if current_char == '\n':
             self.col = 0
             self.ln += 1
+        return self
 
     def copy(self):
         return Position(self.idx, self.ln, self.col)
@@ -96,11 +118,12 @@ class Lexer:
                 tokens.append(Token(TT_RPAREN, pos_start=self.pos))
                 self.advance()
             else:
-                print(f'Illegal character: {self.current_char}')
-                print(f'Ln {self.pos.ln + 1}, Col {self.pos.col + 1}')
-                return []
+                pos_start = self.pos.copy()
+                char = self.current_char
+                self.advance()
+                return [], IllegalCharError(pos_start, self.pos, f"'{char}'")
 
-        return tokens
+        return tokens, None
 
     def make_number(self):
         num_str = ''
@@ -127,9 +150,18 @@ class Lexer:
 
 def main():
     while True:
+        # Get input
         text = input('basic > ')
+
+        # Generate tokens
         lexer = Lexer(text)
-        print('Tokens:', lexer.make_tokens())
+        tokens, error = lexer.make_tokens()
+
+        if error:
+            print(error.as_string())
+            continue
+        
+        print(tokens)
 
 if __name__ == '__main__':
     main()
