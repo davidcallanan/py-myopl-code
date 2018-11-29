@@ -38,12 +38,29 @@ class InvalidSyntaxError(Error):
         super().__init__(pos_start, pos_end, 'Invalid Syntax', details)
 
 class RTError(Error):
-    def __init__(self, pos_start, pos_end, details, context='TODO'):
+    def __init__(self, pos_start, pos_end, details, context):
         super().__init__(pos_start, pos_end, 'Runtime Error', details)
         self.context = context
 
     def as_string(self, text=None):
-        return super().as_string(text)
+        result  = self.generate_traceback()
+        result += '\n'
+        result += super().as_string(text)
+
+        return result
+
+    def generate_traceback(self):
+        result = ''
+
+        ln = self.pos_start.ln
+        ctx = self.context
+
+        while ctx:
+            result = f'  Line {str(ln + 1)} in {ctx.display_name}\n' + result
+            ln = ctx.parent_entry_line
+            ctx = ctx.parent
+
+        return 'Traceback (most recent call last):\n' + result
 
 #######################################
 # POSITION
@@ -334,28 +351,29 @@ class RTResult:
 #######################################
 
 class Number:
-    def __init__(self, value, pos_start, pos_end):
+    def __init__(self, value, pos_start, pos_end, context):
         self.value = value
 
         self.pos_start = pos_start
         self.pos_end = pos_end
+        self.context = context
 
     def added_to(self, other):
         if isinstance(other, Number):
             return RTResult().success(
-                Number(self.value + other.value, self.pos_start, other.pos_end)
+                Number(self.value + other.value, self.pos_start, other.pos_end, self.context)
             )
 
     def subbed_by(self, other):
         if isinstance(other, Number):
             return RTResult().success(
-                Number(self.value - other.value, self.pos_start, other.pos_end)
+                Number(self.value - other.value, self.pos_start, other.pos_end, self.context)
             )
 
     def multed_by(self, other):
         if isinstance(other, Number):
             return RTResult().success(
-                Number(self.value * other.value, self.pos_start, other.pos_end)
+                Number(self.value * other.value, self.pos_start, other.pos_end, self.context)
             )
 
     def dived_by(self, other):
@@ -364,12 +382,13 @@ class Number:
                 return RTResult().failure(
                     RTError(
                         other.pos_start, other.pos_end,
-                        'Division by zero'
+                        'Division by zero',
+                        other.context
                     )
                 )
             
             return RTResult().success(
-                Number(self.value / other.value, self.pos_start, other.pos_end)
+                Number(self.value / other.value, self.pos_start, other.pos_end, self.context)
             )
 
     def negated(self):
@@ -385,8 +404,10 @@ class Number:
 #######################################
 
 class Context:
-    def __init__(self, display_name):
+    def __init__(self, display_name, parent=None, parent_entry_line=None):
         self.display_name = display_name
+        self.parent = parent
+        self.parent_entry_line = parent_entry_line
         
 #######################################
 # INTERPRETER
@@ -405,7 +426,7 @@ class Interpreter:
 
     def visit_NumberNode(self, node, context):
         return RTResult().success(
-            Number(node.tok.value, node.pos_start, node.pos_end)
+            Number(node.tok.value, node.pos_start, node.pos_end, context)
         )
 
     def visit_BinOpNode(self, node, context):
