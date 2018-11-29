@@ -306,8 +306,8 @@ def main():
 
         # Generate AST
         parser = Parser(tokens)
-        result = parser.parse()
-        if result.error: print(result.error.as_string(text))
+        ast = parser.parse()
+        if ast.error: print(result.ast.as_string(text))
         else: print(result.node)
 
 if __name__ == '__main__':
