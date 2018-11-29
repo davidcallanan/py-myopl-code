@@ -379,32 +379,40 @@ class Number:
 
     def __repr__(self):
         return str(self.value)
+
+#######################################
+# CONTEXT
+#######################################
+
+class Context:
+    def __init__(self, display_name):
+        self.display_name = display_name
         
 #######################################
 # INTERPRETER
 #######################################
 
 class Interpreter:
-    def visit(self, node):
+    def visit(self, node, *args, **kwargs):
         method_name = f'visit_{type(node).__name__}'
         method = getattr(self, method_name, self.no_visit_method)
-        return method(node)
+        return method(node, *args, **kwargs)
 
-    def no_visit_method(self, node):
+    def no_visit_method(self, node, *args, **kwargs):
         raise Exception(f'No visit_{type(node).__name__} method')
 
     ###################################
 
-    def visit_NumberNode(self, node):
+    def visit_NumberNode(self, node, context):
         return RTResult().success(
             Number(node.tok.value, node.pos_start, node.pos_end)
         )
 
-    def visit_BinOpNode(self, node):
+    def visit_BinOpNode(self, node, context):
         res = RTResult()
-        left = res.register(self.visit(node.left_node))
+        left = res.register(self.visit(node.left_node, context))
         if res.error: return res
-        right = res.register(self.visit(node.right_node))
+        right = res.register(self.visit(node.right_node, context))
         if res.error: return res
         
         if node.op_tok.type == TT_PLUS:
@@ -416,9 +424,9 @@ class Interpreter:
         if node.op_tok.type == TT_DIV:
             return left.dived_by(right)
 
-    def visit_UnaryOpNode(self, node):
+    def visit_UnaryOpNode(self, node, context):
         res = RTResult()
-        number = res.register(self.visit(node.node))
+        number = res.register(self.visit(node.node, context))
         number.pos_start = node.op_tok.pos_start
         if res.error: return res
 
@@ -453,7 +461,8 @@ def main():
 
         # Run program
         interpreter = Interpreter()
-        result = interpreter.visit(ast.node)
+        context = Context('<program>')
+        result = interpreter.visit(ast.node, context)
         if result.error:
             print(result.error.as_string(text))
             continue
