@@ -317,9 +317,9 @@ class RTResult:
         self.error = None
         self.value = None
 
-    def register(self, res=None):
-        if res and res.error: self.error = res.error
-        return res
+    def register(self, res):
+        if res.error: self.error = res.error
+        return res.value
 
     def success(self, value):
         self.value = value
@@ -373,7 +373,7 @@ class Number:
             )
 
     def negated(self):
-        return RTResult.success(
+        return RTResult().success(
             Number(-self.value, self.pos_start, self.pos_end)
         )
 
@@ -408,25 +408,24 @@ class Interpreter:
         if res.error: return res
         
         if node.op_tok.type == TT_PLUS:
-            return left.value.added_to(right.value)
+            return left.added_to(right)
         if node.op_tok.type == TT_MINUS:
-            return left.value.subbed_by(right.value)
+            return left.subbed_by(right)
         if node.op_tok.type == TT_MUL:
-            return left.value.multed_by(right.value)
+            return left.multed_by(right)
         if node.op_tok.type == TT_DIV:
-            return left.value.dived_by(right.value)
+            return left.dived_by(right)
 
     def visit_UnaryOpNode(self, node):
         res = RTResult()
         number = res.register(self.visit(node.node))
+        number.pos_start = node.op_tok.pos_start
         if res.error: return res
 
         if node.op_tok.type == TT_MINUS:
-            result = number.value.negated()
-            result.value.pos_start = node.op_tok.pos_start
-            return result
+            number = res.register(number.negated())
         
-        return number
+        return res.success(number)
 
 #######################################
 # MAIN
