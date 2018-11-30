@@ -21,12 +21,10 @@ class Error:
         self.error_name = error_name
         self.details = details
 
-    def as_string(self, text=None):
+    def as_string(self):
         result  = f'{self.error_name}: {self.details}\n'
-        result += f'Ln {self.pos_start.ln + 1}, Col {self.pos_start.col + 1}'
-        result += f' -> Ln {self.pos_end.ln + 1}, Col {self.pos_end.col + 1}'
-        if text: result += '\n\n' + string_with_arrows(text, self.pos_start, self.pos_end)
-
+        result += f'File {self.pos_start.fn}, line {self.pos_start.ln + 1}'
+        result += '\n\n' + string_with_arrows(self.pos_start.ftxt, self.pos_start, self.pos_end)
         return result
 
 class IllegalCharError(Error):
@@ -42,10 +40,12 @@ class InvalidSyntaxError(Error):
 #######################################
 
 class Position:
-    def __init__(self, idx=0, ln=0, col=0):
+    def __init__(self, idx, ln, col, fn, ftxt):
         self.idx = idx
         self.ln = ln
         self.col = col
+        self.fn = fn
+        self.ftxt = ftxt
 
     def advance(self, current_char=None):
         self.idx += 1
@@ -53,9 +53,10 @@ class Position:
         if current_char == '\n':
             self.col = 0
             self.ln += 1
+        return self
 
     def copy(self):
-        return Position(self.idx, self.ln, self.col)
+        return Position(self.idx, self.ln, self.col, self.fn, self.ftxt)
 
 #######################################
 # TOKENS
@@ -93,9 +94,9 @@ class Token:
 #######################################
 
 class Lexer:
-    def __init__(self, text):
+    def __init__(self, fn, text):
         self.text = text
-        self.pos = Position(-1, 0, -1)
+        self.pos = Position(-1, 0, -1, fn, text)
         self.current_char = None
         self.advance()
 
@@ -301,17 +302,17 @@ def main():
         text = input('basic > ')
 
         # Generate tokens
-        lexer = Lexer(text)
+        lexer = Lexer("<stdin>", text)
         tokens, error = lexer.make_tokens()
 
         if error:
-            print(error.as_string(text))
+            print(error.as_string())
             continue
 
         # Generate AST
         parser = Parser(tokens)
         ast = parser.parse()
-        if ast.error: print(ast.error.as_string(text))
+        if ast.error: print(ast.error.as_string())
         else: print(ast.node)
 
 if __name__ == '__main__':

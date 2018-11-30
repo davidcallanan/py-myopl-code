@@ -21,12 +21,10 @@ class Error:
         self.error_name = error_name
         self.details = details
 
-    def as_string(self, text=None):
+    def as_string(self):
         result  = f'{self.error_name}: {self.details}\n'
-        result += f'Ln {self.pos_start.ln + 1}, Col {self.pos_start.col + 1}'
-        result += f' -> Ln {self.pos_end.ln + 1}, Col {self.pos_end.col + 1}'
-        if text: result += '\n\n' + string_with_arrows(text, self.pos_start, self.pos_end)
-
+        result += f'File {self.pos_start.fn}, line {self.pos_start.ln + 1}'
+        result += '\n\n' + string_with_arrows(self.pos_start.ftxt, self.pos_start, self.pos_end)
         return result
 
 class IllegalCharError(Error):
@@ -42,24 +40,22 @@ class RTError(Error):
         super().__init__(pos_start, pos_end, 'Runtime Error', details)
         self.context = context
 
-    def as_string(self, text=None):
+    def as_string(self):
         result  = self.generate_traceback()
-        result += '\n'
-        result += super().as_string(text)
-
+        result += f'{self.error_name}: {self.details}'
+        result += '\n\n' + string_with_arrows(self.pos_start.ftxt, self.pos_start, self.pos_end)
         return result
 
     def generate_traceback(self):
         result = ''
-
-        ln = self.pos_start.ln
+        pos = self.pos_start
         ctx = self.context
 
         while ctx:
-            result = f'  Line {str(ln + 1)} in {ctx.display_name}\n' + result
-            ln = ctx.parent_entry_line
+            result = f'  File {pos.fn}, line {str(pos.ln + 1)}, in {ctx.display_name}\n' + result
+            pos = ctx.parent_entry_pos
             ctx = ctx.parent
-
+        
         return 'Traceback (most recent call last):\n' + result
 
 #######################################
@@ -67,10 +63,12 @@ class RTError(Error):
 #######################################
 
 class Position:
-    def __init__(self, idx=0, ln=0, col=0):
+    def __init__(self, idx, ln, col, fn, ftxt):
         self.idx = idx
         self.ln = ln
         self.col = col
+        self.fn = fn
+        self.ftxt = ftxt
 
     def advance(self, current_char=None):
         self.idx += 1
@@ -78,9 +76,10 @@ class Position:
         if current_char == '\n':
             self.col = 0
             self.ln += 1
+        return self
 
     def copy(self):
-        return Position(self.idx, self.ln, self.col)
+        return Position(self.idx, self.ln, self.col, self.fn, self.ftxt)
 
 #######################################
 # TOKENS
@@ -118,9 +117,9 @@ class Token:
 #######################################
 
 class Lexer:
-    def __init__(self, text):
+    def __init__(self, fn, text):
         self.text = text
-        self.pos = Position(-1, 0, -1)
+        self.pos = Position(-1, 0, -1, fn, text)
         self.current_char = None
         self.advance()
 
@@ -404,10 +403,10 @@ class Number:
 #######################################
 
 class Context:
-    def __init__(self, display_name, parent=None, parent_entry_line=None):
+    def __init__(self, display_name, parent=None, parent_entry_pos=None):
         self.display_name = display_name
         self.parent = parent
-        self.parent_entry_line = parent_entry_line
+        self.parent_entry_pos = parent_entry_pos
         
 #######################################
 # INTERPRETER
@@ -466,18 +465,18 @@ def main():
         text = input('basic > ')
 
         # Generate tokens
-        lexer = Lexer(text)
+        lexer = Lexer("<stdin>", text)
         tokens, error = lexer.make_tokens()
 
         if error:
-            print(error.as_string(text))
+            print(error.as_string())
             continue
 
         # Generate AST
         parser = Parser(tokens)
         ast = parser.parse()
         if ast.error:
-            print(ast.error.as_string(text))
+            print(ast.error.as_string())
             continue
 
         # Run program
@@ -485,7 +484,7 @@ def main():
         context = Context('<program>')
         result = interpreter.visit(ast.node, context)
         if result.error:
-            print(result.error.as_string(text))
+            print(result.error.as_string())
             continue
         
         # Output result
