@@ -146,23 +146,12 @@ class Lexer:
             return Token(TT_FLOAT, float(num_str), pos_start, self.pos)
 
 #######################################
-# MAIN
+# RUN
 #######################################
 
-def main():
-    while True:
-        # Get input
-        text = input('basic > ')
-
-        # Generate tokens
-        lexer = Lexer("<stdin>", text)
-        tokens, error = lexer.make_tokens()
-
-        if error:
-            print(error.as_string())
-            continue
-        
-        print(tokens)
-
-if __name__ == '__main__':
-    main()
+def run(fn, text):
+    # Generate tokens
+    lexer = Lexer(fn, text)
+    tokens, error = lexer.make_tokens()
+    
+    return tokens, error

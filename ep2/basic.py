@@ -317,3 +317,19 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+#######################################
+# RUN
+#######################################
+
+def run(fn, text):
+    # Generate tokens
+    lexer = Lexer(fn, text)
+    tokens, error = lexer.make_tokens()
+    if error: return None, error
+
+    # Generate AST
+    parser = Parser(tokens)
+    ast = parser.parse()
+    
+    return ast.node, ast.error
