@@ -393,7 +393,7 @@ class Number:
 
     def negated(self):
         return RTResult().success(
-            Number(-self.value, self.pos_start, self.pos_end)
+            Number(-self.value, self.pos_start, self.pos_end, self.context)
         )
 
     def __repr__(self):
