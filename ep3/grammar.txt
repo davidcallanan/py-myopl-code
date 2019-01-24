@@ -2,6 +2,6 @@ expr    : term ((PLUS|MINUS) term)*
 
 term    : factor ((MUL|DIV) factor)*
 
-factor  : (PLUS|MINUS) factor
-        : INT|FLOAT
-        : LPAREN expr RPAREN
+factor  : INT|FLOAT
+				: (PLUS|MINUS) factor
+				: LPAREN expr RPAREN
