@@ -29,11 +29,11 @@ list-expr   : LSQUARE (expr (COMMA expr)*)? RSQUARE
 
 if-expr     : KEYWORD:IF expr KEYWORD:THEN
               (expr if-expr-b|if-expr-c?)
-            | (NEWLINE statements KEYWORD:END|if-expr-b|if-expr-c?)
+            | (NEWLINE statements KEYWORD:END|if-expr-b|if-expr-c)
 
 if-expr-b   : KEYWORD:ELIF expr KEYWORD:THEN
               (expr if-expr-b|if-expr-c?)
-            | (NEWLINE statements KEYWORD:END|if-expr-b|if-expr-c?)
+            | (NEWLINE statements KEYWORD:END|if-expr-b|if-expr-c)
 
 if-expr-c   : KEYWORD:ELSE
               expr
