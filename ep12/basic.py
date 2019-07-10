@@ -577,11 +577,6 @@ class Parser:
         continue
       statements.append(statement)
 
-      # TODO: Visited list node will create list with None values!
-      # This will also happen for regular lists
-      # Convert all nones to Number.null
-      # This includes if expressions and empty expressions
-
     return res.success(ListNode(
       statements,
       pos_start,
@@ -1892,7 +1887,7 @@ class Interpreter:
       if res.error: return res
       return res.success(Number.null if should_return_null else else_value)
 
-    return res.success(None)
+    return res.success(Number.null)
 
   def visit_ForNode(self, node, context):
     res = RTResult()
