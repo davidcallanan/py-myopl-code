@@ -1362,7 +1362,7 @@ class Value:
   def ored_by(self, other):
     return None, self.illegal_operation(other)
 
-  def notted(self):
+  def notted(self, other):
     return None, self.illegal_operation(other)
 
   def execute(self, args):
