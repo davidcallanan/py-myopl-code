@@ -98,6 +98,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.DS_Store
+refactoring_ep14/.DS_Store
 
 # Spyder project settings
 .spyderproject
