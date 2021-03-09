@@ -1716,7 +1716,7 @@ class BuiltInFunction(BaseFunction):
   execute_input_int.arg_names = []
 
   def execute_clear(self, exec_ctx):
-    os.system('cls' if os.name == 'nt' else 'cls') 
+    os.system('cls' if os.name == 'nt' else 'clear') 
     return RTResult().success(Number.null)
   execute_clear.arg_names = []
 
