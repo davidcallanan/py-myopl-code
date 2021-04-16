@@ -1,15 +1,18 @@
 CLASS Person
 	FUN Person(name)
-		VAR this.name = name # can also use "VAR self.name = name"
+		VAR this.name = name
 	END
-	FUN get_name()
-		RETURN this.name
+	FUN Format()
+		RETURN "My name is " + this.name + "."
 	END
 END
 
-VAR p1 = Person("John Stone")
-PRINT(p1.get_name())
-VAR p2 = Person("James Johnson")
-PRINT(p2.get_name())
+VAR inp = INPUT()
+WHILE inp != "exit" THEN
+	VAR p = Person(inp)
+	PRINT(p.Format())
+	VAR inp = INPUT()
+END
 
 EXIT()
+PRINT("This message will never ever show up! Isn't that wacky?!")

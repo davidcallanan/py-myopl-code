@@ -1420,10 +1420,10 @@ class RTResult:
     return self
 
   def success_exit(self, exit_value):
-  	self.reset()
-  	self.should_exit = True
-  	self.value = exit_value
-  	return self
+    self.reset()
+    self.should_exit = True
+    self.value = exit_value
+    return self
 
   def failure(self, error):
     self.reset()
@@ -1644,6 +1644,18 @@ class String(Value):
   def multed_by(self, other):
     if isinstance(other, Number):
       return String(self.value * other.value).set_context(self.context), None
+    else:
+      return None, Value.illegal_operation(self, other)
+
+  def get_comparison_eq(self, other):
+    if isinstance(other, String):
+      return Number(int(self.value == other.value)).set_context(self.context), None
+    else:
+      return None, Value.illegal_operation(self, other)
+
+  def get_comparison_ne(self, other):
+    if isinstance(other, String):
+      return Number(int(self.value != other.value)).set_context(self.context), None
     else:
       return None, Value.illegal_operation(self, other)
 

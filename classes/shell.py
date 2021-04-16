@@ -13,5 +13,5 @@ while True:
 		else:
 			print(repr(result))
 
-		if should_exit:
-			break
+	if should_exit:
+		break
