@@ -1,0 +1,18 @@
+CLASS Person
+	FUN Person(name)
+		VAR this.name = name
+	END
+	FUN Format()
+		RETURN "My name is " + this.name + "."
+	END
+END
+
+VAR inp = INPUT()
+WHILE inp != "exit" THEN
+	VAR p = Person(inp)
+	PRINT(p.Format())
+	VAR inp = INPUT()
+END
+
+EXIT()
+PRINT("This message will never ever show up! Isn't that wacky?!")
