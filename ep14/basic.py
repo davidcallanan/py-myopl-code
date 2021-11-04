@@ -190,12 +190,20 @@ class Lexer:
       elif self.current_char in ';\n':
         tokens.append(Token(TT_NEWLINE, pos_start=self.pos))
         self.advance()
+      elif self.current_char == '.':
+        if self.pos.idx+1 < len(self.text) and self.text[self.pos.idx+1] in DIGITS:
+          tokens.append(self.make_number())
+        else:
+          pos_start = self.pos.copy()
+          char = self.current_char
+          self.advance()
+          return [], IllegalCharError(pos_start, self.pos, "'" + char + "'")
       elif self.current_char in DIGITS:
         tokens.append(self.make_number())
       elif self.current_char in LETTERS:
         tokens.append(self.make_identifier())
-      elif self.current_char == '"':
-        tokens.append(self.make_string())
+      elif self.current_char in ('"', "'"):
+        tokens.append(self.make_string(self.current_char))
       elif self.current_char == '+':
         tokens.append(Token(TT_PLUS, pos_start=self.pos))
         self.advance()
@@ -246,22 +254,56 @@ class Lexer:
 
   def make_number(self):
     num_str = ''
-    dot_count = 0
+    ln = len(self.text)
+    dot_count = e_count = minus_count = 0
     pos_start = self.pos.copy()
 
-    while self.current_char != None and self.current_char in DIGITS + '.':
-      if self.current_char == '.':
-        if dot_count == 1: break
-        dot_count += 1
-      num_str += self.current_char
-      self.advance()
+    while self.current_char != None and self.current_char in DIGITS + 'eE.-':
+        if self.current_char == '.':
+            if dot_count == 1:
+                break
+            dot_count += 1
+            num_str += '.'
 
-    if dot_count == 0:
-      return Token(TT_INT, int(num_str), pos_start, self.pos)
+        elif self.current_char == 'e' or self.current_char == 'E':
+            if e_count == 1:
+                break
+            elif self.pos.idx+1 < ln and self.text[self.pos.idx-1] in DIGITS:
+                if self.text[self.pos.idx+1] in DIGITS:
+                    num_str += 'e'
+                elif self.text[self.pos.idx+1] == '-':
+                    if self.pos.idx+2 < ln and self.text[self.pos.idx+2] in DIGITS:
+                        num_str += 'e'
+                    else:
+                        break
+                else:
+                    break
+            else:
+              break
+            e_count += 1
+
+        elif self.current_char == '-':
+            if minus_count == 1:
+              break
+            elif self.pos.idx+1 < ln and self.text[self.pos.idx-1] == 'e' or self.text[self.pos.idx-1] == 'E':
+              if self.text[self.pos.idx+1] in DIGITS:
+                num_str += '-'
+              else:
+                break
+            else:
+              break
+            minus_count += 1
+
+        else:
+          num_str += self.current_char
+        self.advance()
+
+    if dot_count == 0 and e_count == 0:
+        return Token(TT_INT, int(num_str), pos_start, self.pos)
     else:
-      return Token(TT_FLOAT, float(num_str), pos_start, self.pos)
+        return Token(TT_FLOAT, float(num_str), pos_start, self.pos)
 
-  def make_string(self):
+  def make_string(self, qt):
     string = ''
     pos_start = self.pos.copy()
     escape_character = False
@@ -272,16 +314,16 @@ class Lexer:
       't': '\t'
     }
 
-    while self.current_char != None and (self.current_char != '"' or escape_character):
+    while self.current_char != None and (self.current_char != qt or escape_character):
       if escape_character:
         string += escape_characters.get(self.current_char, self.current_char)
+        escape_character = False
       else:
         if self.current_char == '\\':
           escape_character = True
         else:
           string += self.current_char
       self.advance()
-      escape_character = False
     
     self.advance()
     return Token(TT_STRING, string, pos_start, self.pos)
@@ -353,11 +395,21 @@ class Lexer:
     return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
 
   def skip_comment(self):
+    pos_start = self.pos.copy()
     self.advance()
-
-    while self.current_char != '\n':
+    if self.current_char == "[":
       self.advance()
-
+      while self.current_char != "]":
+        self.advance()
+      self.advance()
+      if self.current_char != "#":
+        return None, ExpectedCharError(
+          pos_start, self.pos,
+          "While making multiline comment, a '#' (Hash sign) is expected after a ']' (Square bracket)"
+        )
+      else:
+        while self.current_char != '\n':
+          self.advance()
     self.advance()
 
 #######################################
@@ -1362,7 +1414,7 @@ class Value:
   def ored_by(self, other):
     return None, self.illegal_operation(other)
 
-  def notted(self, other):
+  def notted(self):
     return None, self.illegal_operation(other)
 
   def execute(self, args):
@@ -2178,6 +2230,7 @@ global_symbol_table.set("APPEND", BuiltInFunction.append)
 global_symbol_table.set("POP", BuiltInFunction.pop)
 global_symbol_table.set("EXTEND", BuiltInFunction.extend)
 global_symbol_table.set("LEN", BuiltInFunction.len)
+global_symbol_table.set("INCLUDE", BuiltInFunction.run)
 global_symbol_table.set("RUN", BuiltInFunction.run)
 
 def run(fn, text):
