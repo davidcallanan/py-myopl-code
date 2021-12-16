@@ -13,3 +13,5 @@ I'm now finished with the development of this project, and the tutorials are com
 Improvements have been made by others so I'll link to them here:
 
  - [AdrianGjerstad](https://github.com/AdrianGjerstad/py-myopl-code) - started on standard library and added string indexing
+
+ - [jirachi](https://github.com/IfanTsai/jirachi) - Implemented by Golang
