@@ -3,6 +3,7 @@ statements  : NEWLINE* statement (NEWLINE+ statement)* NEWLINE*
 statement		: KEYWORD:RETURN expr?
 						: KEYWORD:CONTINUE
 						: KEYWORD:BREAK
+            : KEYWORD:IMPORT STRING
 						: expr
 
 expr        : KEYWORD:VAR IDENTIFIER EQ expr

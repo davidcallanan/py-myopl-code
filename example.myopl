@@ -1,3 +1,5 @@
+IMPORT "./path/to/library/some_library.myopl"
+
 # This is a very useful piece of software
 
 #*

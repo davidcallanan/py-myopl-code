@@ -4,6 +4,7 @@ That's it.
 
 Additions so far:
  - Multi-line comments. `#* multi-line comment *#`
+ - Import statements. `IMPORT "./path/to/library/some_library.myopl"`
 
 ## -- Original README starts below --
 
