@@ -5,6 +5,7 @@ That's it.
 Additions so far:
  - Multi-line comments. `#* multi-line comment *#`
  - Import statements. `IMPORT "./path/to/library/some_library.myopl"`
+ - Optional parameters. `FUN a(x, y=1, z=2) -> x+y+z; a(1); a(1, 2); a(1, 2, 3)`
 
 ## -- Original README starts below --
 

@@ -55,6 +55,6 @@ while-expr  : KEYWORD:WHILE expr KEYWORD:THEN
             | (NEWLINE statements KEYWORD:END)
 
 func-def    : KEYWORD:FUN IDENTIFIER?
-              LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN
+              LPAREN (IDENTIFIER (EQ expr)? (COMMA IDENTIFIER (EQ expr)?)*)? RPAREN
               (ARROW expr)
             | (NEWLINE statements KEYWORD:END)
