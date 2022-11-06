@@ -1,5 +1,11 @@
 # This is a very useful piece of software
 
+#*
+	This is a multi-line comment test
+	with asterisks in it *******
+	Amazing!
+*#
+
 FUN oopify(prefix) -> prefix + "oop"
 
 FUN join(elements, separator)

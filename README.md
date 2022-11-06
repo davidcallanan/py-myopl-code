@@ -2,6 +2,9 @@
 David's language with some improvements.
 That's it.
 
+Additions so far:
+ - Multi-line comments. `#* multi-line comment *#`
+
 ## -- Original README starts below --
 
 # py-myopl-code

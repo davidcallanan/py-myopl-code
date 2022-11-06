@@ -353,9 +353,17 @@ class Lexer:
     return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
 
   def skip_comment(self):
+    multi_line_comment = False
     self.advance()
+    if self.current_char == "*":
+      multi_line_comment = True
 
-    while self.current_char != '\n':
+    while True:
+      if self.current_char == "*" and multi_line_comment:
+        self.advance()
+        if self.current_char != "#": continue
+        else: break
+      elif self.current_char == "\n" and not multi_line_comment: break
       self.advance()
 
     self.advance()
