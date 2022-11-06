@@ -1,0 +1,4 @@
+FUN parent(x)
+    FUN child() -> x
+    RETURN child
+END

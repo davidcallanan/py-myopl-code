@@ -1662,6 +1662,10 @@ class BaseFunction(Value):
     super().__init__()
     self.name = name or "<anonymous>"
 
+  def set_context(self, context=None):
+    if hasattr(self, "context") and self.context: return self
+    return super().set_context(context)
+
   def generate_new_context(self):
     new_context = Context(self.name, self.context, self.pos_start)
     new_context.symbol_table = SymbolTable(new_context.parent.symbol_table)

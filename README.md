@@ -6,6 +6,7 @@ Additions so far:
  - Multi-line comments. `#* multi-line comment *#`
  - Import statements. `IMPORT "./path/to/library/some_library.myopl"`
  - Optional parameters. `FUN a(x, y=1, z=2) -> x+y+z; a(1); a(1, 2); a(1, 2, 3)`
+ - Closures: In the original, `FUN wrapper(x) -> FUN haxxor() -> x; FUN defineX(x, f) -> f(); PRINT(defineX("hacked", wrapper("closure working")))` would print `hacked` instead of the expected result of `closure working`. This functionality is now implemented properly.
 
 ## -- Original README starts below --
 
