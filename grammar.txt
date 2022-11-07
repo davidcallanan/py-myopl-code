@@ -30,6 +30,7 @@ atom        : INT|FLOAT|STRING|IDENTIFIER
             : for-expr
             : while-expr
             : func-def
+            : do-expr
 
 list-expr   : LSQUARE (expr (COMMA expr)*)? RSQUARE
 
@@ -58,3 +59,5 @@ func-def    : KEYWORD:FUN IDENTIFIER?
               LPAREN (IDENTIFIER (EQ expr)? (COMMA IDENTIFIER (EQ expr)?)*)? RPAREN
               (ARROW expr)
             | (NEWLINE statements KEYWORD:END)
+
+do-expr     : KEYWORD:DO statements KEYWORD:END

@@ -143,6 +143,7 @@ KEYWORDS = [
   'CONTINUE',
   'BREAK',
   'IMPORT',
+  'DO',
 ]
 
 class Token:
@@ -523,6 +524,15 @@ class ImportNode:
   def __repr__(self) -> str:
     return f"IMPORT {self.string_node!r}"
 
+@dataclass
+class DoNode:
+  statements: ListNode
+  pos_start: Position
+  pos_end: Position
+
+  def __repr__(self) -> str:
+    return f'(DO {self.statements!r} END)'
+
 #######################################
 # PARSE RESULT
 #######################################
@@ -857,6 +867,11 @@ class Parser:
       func_def = res.register(self.func_def())
       if res.error: return res
       return res.success(func_def)
+
+    elif tok.matches(TT_KEYWORD, 'DO'):
+      do_expr = res.register(self.do_expr())
+      if res.error: return res
+      return res.success(do_expr)
 
     return res.failure(InvalidSyntaxError(
       tok.pos_start, tok.pos_end,
@@ -1300,6 +1315,26 @@ class Parser:
       body,
       False
     ))
+
+  def do_expr(self):
+    res = ParseResult()
+    pos_start = self.current_tok.pos_start.copy()
+
+    res.register_advancement()
+    self.advance()
+    
+    statements = res.register(self.statements())
+
+    if not self.current_tok.matches(TT_KEYWORD, 'END'):
+      return res.failure(InvalidSyntaxError(
+        self.current_tok.pos_start, self.current_tok.pos_end,
+        "Expected 'END', 'RETURN', 'CONTINUE', 'BREAK', 'VAR', 'IF', 'FOR', 'WHILE', 'FUN', int, float, identifier, '+', '-', '(', '[' or 'NOT'"
+      ))
+    
+    pos_end = self.current_tok.pos_end.copy()
+    res.register_advancement()
+    self.advance()
+    return res.success(DoNode(statements, pos_start, pos_end))
 
   ###################################
 
@@ -2269,10 +2304,23 @@ class Interpreter:
         f"Can't find file '{filepath.value}'", context
       ))
     
-    res.register(run(filename, code, context, node.pos_start.copy(), return_result=True))
-    if res.error: return res
+    _, error = run(filename, code, context, node.pos_start.copy())
+    if error: return res.failure(error)
 
     return res.success(Number.null)
+  
+  def visit_DoNode(self, node, context):
+    res = RTResult()
+    new_context = Context("<DO statement>", context, node.pos_start.copy())
+    new_context.symbol_table = SymbolTable(context.symbol_table)
+    res.register(self.visit(node.statements, new_context))
+
+    return_value = res.func_return_value
+    if res.should_return() and return_value is None: return res
+
+    return_value = return_value or Number.null
+
+    return res.success(return_value)
 
 #######################################
 # RUN
