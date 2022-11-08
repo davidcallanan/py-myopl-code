@@ -8,6 +8,7 @@ Additions so far:
  - Optional parameters. `FUN a(x, y=1, z=2) -> x+y+z; a(1); a(1, 2); a(1, 2, 3)`
  - Closures: In the original, `FUN wrapper(x) -> FUN haxxor() -> x; FUN defineX(x, f) -> f(); PRINT(defineX("hacked", wrapper("closure working")))` would print `hacked` instead of the expected result of `closure working`. This functionality is now implemented properly.
  - DO expression. `DO [stuff] END`. Full behavior in `do.myopl`
+ - TRY statement. `TRY PRINT(1/0) CATCH AS error; PRINT("uhhhhhhhhhhhhhhhhhhh... infinity?"); PRINT(error); END`
 
 ## -- Original README starts below --
 

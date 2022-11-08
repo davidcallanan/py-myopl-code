@@ -4,6 +4,7 @@ statement		: KEYWORD:RETURN expr?
 						: KEYWORD:CONTINUE
 						: KEYWORD:BREAK
             : KEYWORD:IMPORT STRING
+            : try-stmnt
 						: expr
 
 expr        : KEYWORD:VAR IDENTIFIER EQ expr
@@ -61,3 +62,7 @@ func-def    : KEYWORD:FUN IDENTIFIER?
             | (NEWLINE statements KEYWORD:END)
 
 do-expr     : KEYWORD:DO statements KEYWORD:END
+
+try-stmnt   : KEYWORD:TRY statements KEYWORD:CATCH KEYWORD:AS identifier 
+              (KEYWORD:THEN statement)
+            | (NEWLINE statements KEYWORD:END)

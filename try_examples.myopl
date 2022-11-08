@@ -1,0 +1,22 @@
+# TRY to catch errors
+TRY
+    fqjwagads
+CATCH AS error
+    PRINT("oops")
+END
+
+# Using errors as values
+TRY
+    1/INPUT_INT()
+CATCH AS error
+    PRINT("oops")
+    PRINT(PRINT_RET(error) + " happened")
+END
+
+# Catch SyntaxErrors in other files
+TRY
+    IMPORT "some_bad_library.myopl"
+CATCH AS error
+    PRINT("really bad library")
+    PRINT(error)
+END
