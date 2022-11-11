@@ -158,6 +158,19 @@ class RTError(Error):
   def copy(self):
     return __class__(self.pos_start, self.pos_end, self.details, self.context)
 
+class TryError(RTError):
+  def __init__(self, pos_start, pos_end, details, context, prev_error):
+    super().__init__(pos_start, pos_end, details, context)
+    self.prev_error = prev_error 
+  
+  def generate_traceback(self):
+    result = ""
+    if self.prev_error:
+      result += self.prev_error.as_string()
+    result += "\nDuring the handling of the above error, another error occurred:\n\n"
+    return result + super().generate_traceback()
+    
+
 #######################################
 # POSITION
 #######################################
@@ -2364,14 +2377,19 @@ class Interpreter:
   def visit_TryNode(self, node: TryNode, context):
     res = RTResult()
     res.register(self.visit(node.try_block, context))
+    handled_error = res.error
     if res.should_return() and res.error is None: return res
-    elif res.error is not None:
+
+    elif handled_error is not None:
       var_name = node.exc_iden.value
       context.symbol_table.set(var_name, res.error)
       res.error = None
 
       res.register(self.visit(node.catch_block, context))
-      if res.error: return res
+      if res.error: 
+        return res.failure(TryError(
+          res.error.pos_start, res.error.pos_end, res.error.details, res.error.context, handled_error
+        ))
       return res.success(Number.null)
     else:
       return res.success(Number.null)
