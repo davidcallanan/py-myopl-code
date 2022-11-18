@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 DIGITS = '0123456789'
 LETTERS = string.ascii_letters
-LETTERS_DIGITS = LETTERS + DIGITS
+VALID_IDENTIFIERS = LETTERS + DIGITS + "$_"
 
 #######################################
 # ERRORS
@@ -303,7 +303,7 @@ class Lexer:
         self.advance()
       elif self.current_char in DIGITS:
         tokens.append(self.make_number())
-      elif self.current_char in LETTERS:
+      elif self.current_char in VALID_IDENTIFIERS:
         tokens.append(self.make_identifier())
       elif self.current_char == '"':
         tokens.append(self.make_string())
@@ -401,7 +401,7 @@ class Lexer:
     id_str = ''
     pos_start = self.pos.copy()
 
-    while self.current_char != None and self.current_char in LETTERS_DIGITS + '_':
+    while self.current_char != None and self.current_char in VALID_IDENTIFIERS:
       id_str += self.current_char
       self.advance()
 
