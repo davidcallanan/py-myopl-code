@@ -9,6 +9,7 @@ Additions so far:
  - Closures: In the original, `FUN wrapper(x) -> FUN haxxor() -> x; FUN defineX(x, f) -> f(); PRINT(defineX("hacked", wrapper("closure working")))` would print `hacked` instead of the expected result of `closure working`. This functionality is now implemented properly.
  - DO expression. `DO [stuff] END`. Full behavior in `do.myopl`
  - TRY statement. `TRY PRINT(1/0) CATCH AS error; PRINT("uhhhhhhhhhhhhhhhhhhh... infinity?"); PRINT(error); END`
+ - Dynamic arguments. `FUN whatever(arg FROM $/2) -> arg; PRINT(whatever(1))`
 
 ## -- Original README starts below --
 

@@ -249,6 +249,7 @@ KEYWORDS = [
   'TRY',
   'CATCH',
   'AS',
+  'FROM',
 ]
 
 class Token:
@@ -578,10 +579,11 @@ class WhileNode:
     self.pos_end = self.body_node.pos_end
 
 class FuncDefNode:
-  def __init__(self, var_name_tok, arg_name_toks, defaults, body_node, should_auto_return):
+  def __init__(self, var_name_tok, arg_name_toks, defaults, dynamics, body_node, should_auto_return):
     self.var_name_tok = var_name_tok
     self.arg_name_toks = arg_name_toks
     self.defaults = defaults
+    self.dynamics = dynamics
     self.body_node = body_node
     self.should_auto_return = should_auto_return
 
@@ -1281,6 +1283,7 @@ class Parser:
     self.advance(res)
     arg_name_toks = []
     defaults = []
+    dynamics = []
     hasOptionals = False
 
     if self.current_tok.type == TT_IDENTIFIER:
@@ -1302,6 +1305,13 @@ class Parser:
         ))
       else:
         defaults.append(None)
+      
+      if self.current_tok.matches(TT_KEYWORD, 'FROM'):
+        self.advance(res)
+        dynamics.append(res.register(self.expr()))
+        if res.error: return res
+      else:
+        dynamics.append(None)
 
       
       while self.current_tok.type == TT_COMMA:
@@ -1331,6 +1341,13 @@ class Parser:
           ))
         else:
           defaults.append(None)
+        
+        if self.current_tok.matches(TT_KEYWORD, 'FROM'):
+          self.advance(res)
+          dynamics.append(res.register(self.expr()))
+          if res.error: return res
+        else:
+          dynamics.append(None)
       
       if self.current_tok.type != TT_RPAREN:
         return res.failure(InvalidSyntaxError(
@@ -1356,6 +1373,7 @@ class Parser:
         var_name_tok,
         arg_name_toks,
         defaults,
+        dynamics,
         body,
         True
       ))
@@ -1383,6 +1401,7 @@ class Parser:
       var_name_tok,
       arg_name_toks,
       defaults,
+      dynamics,
       body,
       False
     ))
@@ -1777,26 +1796,37 @@ class BaseFunction(Value):
 
     return res.success(None)
 
-  def populate_args(self, arg_names, args, defaults, exec_ctx):
+  def populate_args(self, arg_names, args, defaults, dynamics, exec_ctx):
+    res = RTResult()
     for i in range(len(arg_names)):
       arg_name = arg_names[i]
+      dynamic = dynamics[i]
       arg_value = defaults[i] if i >= len(args) else args[i]
+      if dynamic is not None:
+        dynamic_context = Context(f"{self.name} (dynamic argument '{arg_name}')", exec_ctx, dynamic.pos_start.copy())
+        dynamic_context.symbol_table = SymbolTable(exec_ctx.symbol_table)
+        dynamic_context.symbol_table.set("$", arg_value)
+        arg_value = res.register(Interpreter().visit(dynamic, dynamic_context))
+        if res.should_return(): return res
       arg_value.set_context(exec_ctx)
       exec_ctx.symbol_table.set(arg_name, arg_value)
+    return res.success(None)
 
-  def check_and_populate_args(self, arg_names, args, defaults, exec_ctx):
+  def check_and_populate_args(self, arg_names, args, defaults, dynamics, exec_ctx):
     res = RTResult()
     res.register(self.check_args(arg_names, args, defaults))
     if res.should_return(): return res
-    self.populate_args(arg_names, args, defaults, exec_ctx)
+    res.register(self.populate_args(arg_names, args, defaults, dynamics, exec_ctx))
+    if res.should_return(): return res
     return res.success(None)
 
 class Function(BaseFunction):
-  def __init__(self, name, body_node, arg_names, defaults, should_auto_return):
+  def __init__(self, name, body_node, arg_names, defaults, dynamics, should_auto_return):
     super().__init__(name)
     self.body_node = body_node
     self.arg_names = arg_names
     self.defaults = defaults
+    self.dynamics = dynamics
     self.should_auto_return = should_auto_return
 
   def execute(self, args):
@@ -1804,7 +1834,7 @@ class Function(BaseFunction):
     interpreter = Interpreter()
     exec_ctx = self.generate_new_context()
 
-    res.register(self.check_and_populate_args(self.arg_names, args, self.defaults, exec_ctx))
+    res.register(self.check_and_populate_args(self.arg_names, args, self.defaults, self.dynamics, exec_ctx))
     if res.should_return(): return res
 
     value = res.register(interpreter.visit(self.body_node, exec_ctx))
@@ -1814,7 +1844,7 @@ class Function(BaseFunction):
     return res.success(ret_value)
 
   def copy(self):
-    copy = Function(self.name, self.body_node, self.arg_names, self.defaults, self.should_auto_return)
+    copy = Function(self.name, self.body_node, self.arg_names, self.defaults, self.dynamics, self.should_auto_return)
     copy.set_context(self.context)
     copy.set_pos(self.pos_start, self.pos_end)
     return copy
@@ -1833,7 +1863,7 @@ class BuiltInFunction(BaseFunction):
     method_name = f'execute_{self.name}'
     method = getattr(self, method_name, self.no_execute_method)
 
-    res.register(self.check_and_populate_args(method.arg_names, args, method.defaults, exec_ctx))
+    res.register(self.check_and_populate_args(method.arg_names, args, method.defaults, method.dynamics, exec_ctx))
     if res.should_return(): return res
 
     return_value = res.register(method(exec_ctx))
@@ -1856,12 +1886,15 @@ class BuiltInFunction(BaseFunction):
 
   # Decorator for built-in functions
   @staticmethod
-  def args(arg_names, defaults=None):
+  def args(arg_names, defaults=None, dynamics=None):
     if defaults is None:
       defaults = [None] * len(arg_names)
+    if dynamics is None:
+      dynamics = [None] * len(arg_names)
     def _args(f):
       f.arg_names = arg_names
       f.defaults = defaults
+      f.dynamics = dynamics
       return f
     return _args
 
@@ -2301,7 +2334,7 @@ class Interpreter:
       if res.should_return(): return res
       defaults.append(default_value)
     
-    func_value = Function(func_name, body_node, arg_names, defaults, node.should_auto_return).set_context(context).set_pos(node.pos_start, node.pos_end)
+    func_value = Function(func_name, body_node, arg_names, defaults, node.dynamics, node.should_auto_return).set_context(context).set_pos(node.pos_start, node.pos_end)
     
     if node.var_name_tok:
       context.symbol_table.set(func_name, func_value)

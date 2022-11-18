@@ -57,9 +57,11 @@ while-expr  : KEYWORD:WHILE expr KEYWORD:THEN
             | (NEWLINE statements KEYWORD:END)
 
 func-def    : KEYWORD:FUN IDENTIFIER?
-              LPAREN (IDENTIFIER (EQ expr)? (COMMA IDENTIFIER (EQ expr)?)*)? RPAREN
+              LPAREN (param (COMMA param)*)? RPAREN
               (ARROW expr)
             | (NEWLINE statements KEYWORD:END)
+
+param       : IDENTIFIER (EQ expr)? (KEYWORD:FROM expr)
 
 do-expr     : KEYWORD:DO statements KEYWORD:END
 
