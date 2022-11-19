@@ -7,8 +7,10 @@ statement		: KEYWORD:RETURN expr?
             : try-stmnt
 						: expr
 
-expr        : KEYWORD:VAR IDENTIFIER EQ expr
+expr        : assign-expr
             : comp-expr ((KEYWORD:AND|KEYWORD:OR) comp-expr)*
+
+assign-expr : IDENTIFIER EQ expr
 
 comp-expr   : NOT comp-expr
             : arith-expr ((EE|LT|GT|LTE|GTE) arith-expr)*

@@ -10,6 +10,7 @@ Additions so far:
  - DO expression. `DO [stuff] END`. Full behavior in `do.myopl`
  - TRY statement. `TRY PRINT(1/0) CATCH AS error; PRINT("uhhhhhhhhhhhhhhhhhhh... infinity?"); PRINT(error); END`
  - Dynamic arguments. `FUN whatever(arg FROM $/2) -> arg; PRINT(whatever(1))`
+ - No `VAR` keyword. Just assign variables with `<name> = <expr>`
 
 ## -- Original README starts below --
 

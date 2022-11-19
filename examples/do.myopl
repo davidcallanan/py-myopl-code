@@ -4,9 +4,9 @@ DO
 END
 
 # DO creates new context
-VAR x = 1
+x = 1
 DO
-    VAR x = 2
+    x = 2
     PRINT("Should be 2")
     PRINT(x)
 END
@@ -14,7 +14,7 @@ PRINT("Should be 1")
 PRINT(x)
 
 # DO can return values
-VAR y = DO
+y = DO
     RETURN 2 * 2
 END
 
