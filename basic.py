@@ -822,6 +822,12 @@ class Parser:
         self.current_tok.pos_start, self.current_tok.pos_end,
         "Expected 'IF', 'FOR', 'WHILE', 'FUN', int, float, identifier, '+', '-', '(', '[' or 'NOT'"
       ))
+    
+    if self.current_tok.type == TT_EQ:
+      return res.failure(InvalidSyntaxError(
+        node.pos_start, node.pos_end,
+        "Invalid assignment"
+      ))
 
     return res.success(node)
 
